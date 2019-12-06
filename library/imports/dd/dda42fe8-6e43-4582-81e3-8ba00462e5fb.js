@@ -18,58 +18,121 @@ cc.Class({
 
     onLoad: function onLoad() {
         console.log(this.music);
-        // 实例化 item
-        for (var i = 0; i < 40; i++) {
+
+        this.n = 128;
+        // all items
+        var w = 1280;
+        for (var i = 0; i < this.n; i++) {
             var item = cc.instantiate(this.item);
             this.mgr.addChild(item);
+            var width = item.width;
+            item.height = 5;
             item.y = 0;
-            item.x = -480 + i * 24 + 12;
+            item.x = -(this.n / 2) * (width + 4) + i * width + i * 4 + width / 2;
         }
-        // 处理不同平台
+
+        this.eddyStyle();
+
+        // Handle different platforms
         window.AudioContext = window.AudioContext || window.webkitAudioContext || window.mozAudioContext || window.msAudioContext;
+    },
+    circleStyle: function circleStyle() {
+        var value_R = 120;
+        var angle = 360 / this.n;
+        var all_item = this.mgr.children;
+        for (var i = 0; i < this.n; i++) {
+            var item = all_item[i];
+            var value_angle = (i - Math.floor(this.n / 2)) * angle;
+            var _pos = this.calculatePosition(value_angle, value_R);
+            item.angle = -value_angle;
+            item.x = _pos.x;
+            item.y = _pos.y;
+        }
+    },
+    eddyStyle: function eddyStyle() {
+        var value_R = 200;
+        var angle = 360 / this.n;
+        var all_item = this.mgr.children;
+        for (var i = 0; i < this.n; i++) {
+            var item = all_item[i];
+            var value_angle = (i - Math.floor(this.n / 2)) * angle;
+            var _pos2 = this.calculatePosition(value_angle, value_R);
+            item.angle = -value_angle;
+            item.x = _pos2.x;
+            item.y = _pos2.y;
+
+            value_R -= 0.5;
+        }
+    },
+    sinStyle: function sinStyle() {
+        var value_R = 120;
+        var angle = 360 / this.n;
+        var all_item = this.mgr.children;
+        for (var i = 0; i < this.n; i++) {
+            var item = all_item[i];
+            var value_angle = (i - Math.floor(this.n / 2)) * angle;
+            var x = (i - Math.floor(this.n / 2)) * item.width * 2;
+            var y = x * sin;
+            item.angle = -value_angle;
+            item.x = pos.x;
+            item.y = pos.y;
+
+            value_R -= 0.5;
+        }
     },
     onClick: function onClick() {
         var AudioContext = window.AudioContext;
-        // audioContext 只相当于一个容器。
+        // audioContext is only equivalent to a container.
         var audioContext = new AudioContext();
-        // 要让 audioContext 真正丰富起来需要将实际的音乐信息传递给它的。
-        // 也就是将 AudioBuffer 数据传递进去。
-        // 以下就是创建音频资源节点管理者。
+        // To make the audioContext really rich, you need to pass it the actual music information.
+        // That is, the AudioBuffer data is passed in.
+        // Here's how to create an audio resource node manager.
         this.audioBufferSourceNode = audioContext.createBufferSource();
-        // 将 AudioBuffer 传递进去。
+        // Pass AudioBuffer in.
         this.audioBufferSourceNode.buffer = this.music._audio;
-        // 创建分析器。
+        // Create the analyzer.
         this.analyser = audioContext.createAnalyser();
-        // 精度设置
+        // precision setting
         this.analyser.fftSize = 256;
-        // 在传到扬声器之前，连接到分析器。
+        // Connect to the analyzer before passing to the speaker.
         this.audioBufferSourceNode.connect(this.analyser);
-        // 连接到扬声器。
+        // Connect to speakers.
         this.analyser.connect(audioContext.destination);
-        // 开始播放
+        // Start playing
         this.audioBufferSourceNode.start(0);
     },
     onStop: function onStop() {
-        // 停止方法
         this.audioBufferSourceNode.stop();
     },
     update: function update(dt) {
-        // 等待准备好
+        // wait for it to be ready
         if (!this.analyser) return;
-        // 建立数据准备接受数据
+        // Create data and accept data
         this.dataArray = new Uint8Array(this.analyser.frequencyBinCount);
-        // 分析结果存入数组。
+        // The analysis results are stored in an array.
         this.analyser.getByteFrequencyData(this.dataArray);
         this.draw(this.dataArray);
     },
     draw: function draw(dataArray) {
-        // 数值自定
-        // 960 / 40 有 24 ; 128 / 40 取 3
-        for (var i = 0; i < 40; i++) {
-            var h = dataArray[i * 3] * 1.5;
-            if (h < 5) h = 5;
+        // value customization
+        // 960/40 has 24; 128/this.n gets 1
+        var count = 0;
+        for (var i = 0; i < this.n; i++) {
+            var h = dataArray[i] / 2;
+            if (h < 5 / 2) {
+                count++;
+                h = dataArray[i - count] / 2;
+                h = 5;
+            }
+            //h = 5;
             this.mgr.children[i].height = h;
         }
+    },
+    calculatePosition: function calculatePosition(angle, r) {
+        angle = angle * (Math.PI / 180);
+        var x = r * Math.sin(angle);
+        var y = r * Math.cos(angle);
+        return cc.v2(x, y);
     }
 });
 
